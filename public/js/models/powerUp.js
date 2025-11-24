@@ -4,15 +4,15 @@ class PowerUp {
         this.y = y;
         this.radius = radius;
         this.type = type; 
+        this.image = new Image();
+        type === 'extraLife'
+            ? this.image.src = '/images/powerups/battery.png'
+            : this.image.src = '/images/powerups/bullet.png';
     }
     draw() {
-        context.beginPath();
-        context.arc(this.x, this.y, this.radius * window.devicePixelRatio, 0, Math.PI * 2, false);
-        if (this.type === 'extraLife') {
-            context.fillStyle = 'green';
-        } else if (this.type === 'extraBullets') {
-            context.fillStyle = 'orange'; 
-        }
-        context.fill();
+        const size = this.radius * 4;
+        const half = size / 2;
+
+        context.drawImage(this.image, this.x - half, this.y - half, size, size);
     }
 }

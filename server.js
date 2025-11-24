@@ -40,6 +40,11 @@ function generatePowerUp() {
   };
 }
 
+// Naves 
+const SHIPS = [
+  "images/spaceship.png"
+];
+
 io.on('connection', (socket) => {
   console.log('a user connected');
   players[socket.id] = { 
@@ -49,7 +54,9 @@ io.on('connection', (socket) => {
     radius : 15,
     lifes : 30,
     bullets : 10,
-    sequence : 0
+    sequence : 0,
+    ship: SHIPS[Math.floor(Math.random() * SHIPS.length)],
+    angle: 0
   };
 
   io.emit('playersUpdate', players);
@@ -101,7 +108,11 @@ io.on('connection', (socket) => {
       players[socket.id].radius = 2 * 15;
   });
 
-
+  socket.on("updateAngle", (angle) => {
+    if (players[socket.id]) {
+        players[socket.id].angle = angle;
+    }
+});
 
   socket.on('disconnect', () => {
     console.log('user disconnected');

@@ -25,7 +25,7 @@ socket.on('playersUpdate', (backendPlayers) => {
         if (!frontendPlayers[id]) {
            
             frontendPlayers[id] = new Player({x: p.x, y: p.y, radius: 15, 
-                color: p.color, lifes: p.lifes, bullets: p.bullets });
+                color: p.color, lifes: p.lifes, bullets: p.bullets, ship: p.ship, angle: p.angle});
         
         } else {
             
