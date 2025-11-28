@@ -177,7 +177,7 @@ function spawnPowerUp() {
   activeMap.nextPowerUpId++;
 }
 
-// Naves 
+// Naves
 const SHIPS = [
   "images/spaceship.png"
 ];
@@ -185,6 +185,8 @@ const SHIPS = [
 io.on('connection', (socket) => {
   console.log('a user connected');
   const spawnPoint = randomPointAvoidingWalls(activeMap.width, activeMap.height, 15, Math.random);
+  
+  // Inicializar jugador con valores por defecto
   players[socket.id] = { 
     x: spawnPoint.x, 
     y: spawnPoint.y,
@@ -193,10 +195,23 @@ io.on('connection', (socket) => {
     lifes : 30,
     bullets : 10,
     sequence : 0,
-    ship: SHIPS[Math.floor(Math.random() * SHIPS.length)],
+    ship: "images/spaceship.png", // Valor por defecto
+    playerName: `Jugador-${socket.id.slice(0, 4)}`, // Nombre por defecto
     angle: 0,
     frozenUntil: 0
   };
+
+  // Escuchar evento de configuración del jugador desde el menú
+  socket.on('playerConfig', (config) => {
+    if (players[socket.id]) {
+      players[socket.id].playerName = config.name;
+      players[socket.id].ship = config.ship;
+      console.log(`Jugador ${socket.id} configurado: ${config.name}, Nave: ${config.ship}`);
+      
+      // Notificar a todos los clientes la actualización
+      io.emit('playersUpdate', players);
+    }
+  });
 
   io.emit('playersUpdate', players);
 
@@ -215,12 +230,12 @@ io.on('connection', (socket) => {
 
 
   socket.on('shootProjectile', ({x, y, angle}) => {
-    
+
     projectileId += 1;
 
-     const velocity = {
-        x: Math.cos(angle) * 5,
-        y: Math.sin(angle) * 5
+    const velocity = {
+      x: Math.cos(angle) * 5,
+      y: Math.sin(angle) * 5
     };
 
     projectiles[projectileId] = {
@@ -256,8 +271,10 @@ io.on('connection', (socket) => {
   socket.on("updateAngle", (angle) => {
     if (players[socket.id]) {
         players[socket.id].angle = angle;
+        // Enviar actualización a TODOS los clientes
+        io.emit('playersUpdate', players);
     }
-});
+ });
 
   socket.on('disconnect', () => {
     console.log('user disconnected');
@@ -269,7 +286,7 @@ io.on('connection', (socket) => {
     const player = players[socket.id];
     if (!player) return;
 
-    
+
 
     const targetX = clamp(player.x + dx, player.radius, activeMap.width - player.radius);
     const targetY = clamp(player.y + dy, player.radius, activeMap.height - player.radius);
@@ -283,7 +300,7 @@ io.on('connection', (socket) => {
 
     // Guardar la última entrada procesada
     player.sequence = sequence;
-});
+  });
 
   console.log('Current players:', players);
 
@@ -299,8 +316,8 @@ setInterval(() => {
         projectile.x +5 <= 0 ||
         projectile.y -5 >= activeMap.height ||
         projectile.y +5 <= 0) {
-          delete projectiles[id];
-          continue;
+      delete projectiles[id];
+      continue;
     }
 
     let hitWall = false;
@@ -317,24 +334,23 @@ setInterval(() => {
 
     for (const pid in players) {
       const player = players[pid];
-      const disatance = Math.hypot
-        (projectile.x - player.x, projectile.y - player.y);
-      if (disatance < projectile.radius + player.radius &&
-          projectile.playerId !== pid
-      ) {
+      const distance = Math.hypot(projectile.x - player.x, projectile.y - player.y);
+      if (distance < projectile.radius + player.radius &&
+          projectile.playerId !== pid) {
         player.lifes -= 1;
         delete projectiles[id];
-        console.log('Player hit:', player);
+        console.log('Player hit:', player.playerName);
         if (player.lifes <= 0) {
-          console.log('Player eliminated:', pid);
+          console.log('Player eliminated:', player.playerName);
           delete players[pid];
         }
+        break;
       }
     }
 
   }
 
- 
+
   // Colisiones de jugadores con power-ups
   for(const puid in powerUps) {
     const powerUp = powerUps[puid];
@@ -344,13 +360,15 @@ setInterval(() => {
       if (distance < powerUp.radius + player.radius - 10) {
         // Aplicar efecto del power-up
         if (powerUp.type === 'extraLife') {
-          console.log(player)
           player.lifes += 5; // Aumenta vidas
+          console.log(`${player.playerName} obtuvo +5 vidas`);
         } else if (powerUp.type === 'extraBullets') {
           player.bullets += 5; // Aumenta balas
+          console.log(`${player.playerName} obtuvo +5 balas`);
         }
         // Eliminar el power-up del juego
         delete powerUps[puid];
+        break;
       }
     }
   }
@@ -362,36 +380,40 @@ setInterval(() => {
       const player = players[pid];
       const distance = Math.hypot(obstacle.x - player.x, obstacle.y - player.y);
       if (distance < obstacle.radius + player.radius - 10) {
-         switch (obstacle.type) {
+        switch (obstacle.type) {
           case 'asteroid':
             player.lifes -= 1;
+            console.log(`${player.playerName} chocó con asteroide: -1 vida`);
             break;
-
           case 'alien':
             player.lifes -= 2;
+            console.log(`${player.playerName} atacado por alien: -2 vidas`);
             break;
-
           case 'slowTrap':
             if (Date.now() > player.frozenUntil) {
               player.frozenUntil = Date.now() + 3000; // 3 segundos
+              console.log(`${player.playerName} atrapado en slow trap`);
             }
             break;
         }
         // Eliminar el obstáculo del juego
         delete obstacles[oid];
+        break;
       }
     }
   }
 
+  // Generar nuevos power-ups si hay pocos
   if (Object.keys(powerUps).length < 5) {
     spawnPowerUp();
   }
 
+  // Generar nuevos obstáculos si hay pocos
   if (Object.keys(obstacles).length < 5) {
     spawnObstacle();
   }
 
-  
+  // Enviar actualizaciones a todos los clientes
 
   io.emit('powerUpsUpdate', powerUps);
   io.emit('obstaclesUpdate', obstacles);
