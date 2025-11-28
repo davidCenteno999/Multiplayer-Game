@@ -4,40 +4,131 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Multiplayer Game</title>
+    <title>Space Battle</title>
     <style type="text/css">
         @import url('./styles.css');
         canvas {
             width: 100%;
             height: 100%;
         }
-
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: black;
+        }
+        
+        #menu-redirect {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a0a2a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        #menu-redirect .redirect-message {
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: rgba(10, 20, 50, 0.9);
+            padding: 30px;
+            border-radius: 10px;
+            border: 2px solid #4a9fff;
+        }
+        
+        #menu-redirect .redirect-btn {
+            background: #4a9fff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-size: 16px;
+        }
     </style>
 
 </head>
 <body>
+    <div id="menu-redirect">
+        <div class="redirect-message">
+            <h2>Redirigiendo al Menú Principal</h2>
+            <p>Por favor, configura tu jugador antes de iniciar el juego.</p>
+            <button class="redirect-btn" onclick="redirectToMenu()">Ir al Menú</button>
+        </div>
+    </div>
 
-
-
-    <div id="hud">
+    <div id="hud" style="display: none;">
         <div id="hud-players"></div>
     </div>
 
-    <canvas></canvas>
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.2/gsap.min.js"
-      integrity="sha512-kVlGhj2qFy+KBCFuvjBJTGUMxbdqJKs4yK2jh0e0VPhWUPiPC87bzm4THmaaIee3Oj7j6sDpTTgm2EPPiESqBg=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    ></script>
-    <script src ="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
-    <script src="./js/models/player.js"></script>
-    <script src="./js/models/projectile.js"></script>
-    <script src="./js/models/powerUp.js"></script>
-    <script src="./js/models/wall.js"></script>
-    <script src="./js/models/obstacle.js"></script>
-    <script src="./js/index.js"></script>
-    <script src="./js/eventListener.js"></script>
-   
+    <canvas style="display: none;"></canvas>
+    
+    <script>
+        function redirectToMenu() {
+            // Limpiar sessionStorage antes de redirigir
+            sessionStorage.removeItem('playerConfig');
+            window.location.href = 'menu/menu.html';
+        }
+        
+        // Verificar si hay configuración de jugador en SESSION storage
+        const playerConfig = sessionStorage.getItem('playerConfig');
+        if (playerConfig) {
+            // Si hay configuración, mostrar el juego
+            document.getElementById('menu-redirect').style.display = 'none';
+            document.getElementById('hud').style.display = 'block';
+            document.querySelector('canvas').style.display = 'block';
+            
+            // Cargar los scripts del juego
+            loadGameScripts();
+        } else {
+            // Si no hay configuración, redirigir automáticamente
+            setTimeout(redirectToMenu, 1000);
+        }
+        
+        function loadGameScripts() {
+        const scripts = [
+            'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.2/gsap.min.js',
+            'https://cdn.socket.io/4.6.1/socket.io.min.js',
+            './js/models/player.js',
+            './js/models/projectile.js',
+            './js/models/powerUp.js',
+            './js/models/wall.js',
+            './js/models/obstacle.js',
+            './js/index.js',
+            './js/eventListener.js'
+        ];
+        
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = () => {
+                    console.error(`Error cargando script: ${src}`);
+                    reject(new Error(`Failed to load script: ${src}`));
+                };
+                document.body.appendChild(script);
+            });
+        }
+        
+        async function loadAllScripts() {
+            for (const src of scripts) {
+                await loadScript(src);
+            }
+            console.log('Todos los scripts del juego cargados correctamente');
+        }
+        
+        loadAllScripts().catch(error => {
+            console.error('Error crítico cargando scripts:', error);
+            alert('Error al cargar el juego. Por favor, recarga la página.');
+        });
+    }
+    </script>
 </body>
 </html>
