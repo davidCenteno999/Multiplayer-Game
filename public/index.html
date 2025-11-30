@@ -69,7 +69,9 @@
 
     <canvas style="display: none;"></canvas>
     
+
     <script>
+        
         function redirectToMenu() {
             // Limpiar sessionStorage antes de redirigir
             sessionStorage.removeItem('playerConfig');
@@ -130,5 +132,14 @@
         });
     }
     </script>
+   <div id="death-screen" class="hidden-class">
+    <div class="death-message">
+        <h1>¡Has muerto!</h1>
+        <p>Gracias por jugar</p>
+        <button onclick="location.reload()">Reintentar</button>
+    </div>
+</div>
 </body>
+<canvas id="space-bg"></canvas>
+
 </html>

@@ -37,14 +37,19 @@ function circleIntersectsRect(px, py, radius, rect) {
         const row = document.createElement('div');
         row.className = `hud-row${id === socket.id ? ' me' : ''}`;
 
+        // Color
         const color = document.createElement('div');
         color.className = 'hud-color';
         color.style.background = p.color;
 
+        // Nombre (arriba)
         const name = document.createElement('div');
         name.className = 'hud-name';
-        // Usar el nombre del servidor en lugar del local
         name.textContent = p.playerName || `P-${id.slice(0, 4)}`;
+
+        // Contenedor inferior de stats
+        const stats = document.createElement('div');
+        stats.className = 'hud-stats-row';
 
         const hp = document.createElement('div');
         hp.className = 'hud-stat';
@@ -54,11 +59,21 @@ function circleIntersectsRect(px, py, radius, rect) {
         ammo.className = 'hud-stat';
         ammo.textContent = `Ammo ${p.bullets}`;
 
+        const kills = document.createElement('div');
+        kills.className = 'hud-stat';
+        kills.textContent = `Kills ${p.kills || 0}`;
+
+        stats.appendChild(hp);
+        stats.appendChild(ammo);
+        stats.appendChild(kills);
+
+        // Construcción final
         row.appendChild(color);
         row.appendChild(name);
-        row.appendChild(hp);
-        row.appendChild(ammo);
+        row.appendChild(stats);
+
         hudContainer.appendChild(row);
+
     });
 }
 
@@ -81,6 +96,19 @@ function drawNameplates() {
         context.fillText(label, textX, textY);
     }
     context.restore();
+}
+
+// Mostrar pantalla de muerte
+function showDeathScreen() {
+    const screen = document.getElementById("death-screen");
+    screen.classList.remove("hidden-class");
+
+    // Detener el loop del juego
+    cancelAnimationFrame(animationId);
+
+    // Opcional: bloquear inputs
+    window.onkeydown = () => {};
+    window.onkeyup = () => {};
 }
 
 
@@ -176,6 +204,9 @@ socket.on('playersUpdate', (backendPlayers) => {
     }
     for (const id in frontendPlayers) {
         if (!backendPlayers[id]) {
+             if (id === socket.id) {
+                showDeathScreen();
+            }
             delete frontendPlayers[id];
         }
     }
