@@ -88,7 +88,7 @@ function createMap(seed = Date.now()) {
     walls: {},
     nextPowerUpId: 0,
     nextObstacleId: 0,
-    nextWallId: 0
+    nextWallId: 0,
   };
 
   for (let i = 0; i < variant.walls; i++) {
@@ -198,7 +198,8 @@ io.on('connection', (socket) => {
     ship: "images/spaceship.png", // Valor por defecto
     playerName: `Jugador-${socket.id.slice(0, 4)}`, // Nombre por defecto
     angle: 0,
-    frozenUntil: 0
+    frozenUntil: 0,
+    kills: 0
   };
 
   // Escuchar evento de configuración del jugador desde el menú
@@ -337,13 +338,15 @@ setInterval(() => {
       const distance = Math.hypot(projectile.x - player.x, projectile.y - player.y);
       if (distance < projectile.radius + player.radius &&
           projectile.playerId !== pid) {
-        player.lifes -= 1;
-        delete projectiles[id];
-        console.log('Player hit:', player.playerName);
+        player.lifes -= 5;
         if (player.lifes <= 0) {
+          players[projectile.playerId].kills += 1;
+          console.log('Total kills:', players[projectile.playerId].kills);
           console.log('Player eliminated:', player.playerName);
           delete players[pid];
         }
+        delete projectiles[id];
+        console.log('Player hit:', player.playerName);
         break;
       }
     }
@@ -382,12 +385,12 @@ setInterval(() => {
       if (distance < obstacle.radius + player.radius - 10) {
         switch (obstacle.type) {
           case 'asteroid':
-            player.lifes -= 1;
-            console.log(`${player.playerName} chocó con asteroide: -1 vida`);
+            player.lifes -= 3;
+            console.log(`${player.playerName} chocó con asteroide: -3 vidas`);
             break;
           case 'alien':
-            player.lifes -= 2;
-            console.log(`${player.playerName} atacado por alien: -2 vidas`);
+            player.lifes -= 3;
+            console.log(`${player.playerName} atacado por alien: -3 vidas`);
             break;
           case 'slowTrap':
             if (Date.now() > player.frozenUntil) {
